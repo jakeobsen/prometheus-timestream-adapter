@@ -145,6 +145,7 @@ func serve(logger *zap.SugaredLogger, addr string, storageAdapter PrometheusRemo
 	http.Handle("/write", writeHandler(logger, storageAdapter))
 	http.Handle("/read", readHandler(logger, storageAdapter))
 	http.Handle("/healthCheck", healthCheckHandler(logger))
+	http.Handle("/healthcheck", healthCheckHandler(logger))
 
 	if cfg.tls {
 		return http.ListenAndServeTLS(addr, cfg.tlsCert, cfg.tlsKey, nil)
