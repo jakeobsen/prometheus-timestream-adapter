@@ -32,6 +32,7 @@ import (
 )
 
 type config struct {
+	healthCheck   bool
 	awsRegion     string
 	databaseName  string
 	listenAddr    string
@@ -82,6 +83,7 @@ func init() {
 	prometheus.MustRegister(sentBatchDuration)
 	prometheus.MustRegister(sentSamples)
 
+	flag.BoolVar(&cfg.healthCheck, "healthCheck", false, "")
 	flag.BoolVar(&cfg.tls, "tls", false, "")
 	flag.StringVar(&cfg.awsRegion, "awsRegion", "eu-central-1", "")
 	flag.StringVar(&cfg.databaseName, "databaseName", "prometheus-database", "")
@@ -121,10 +123,14 @@ func main() {
 	defer sugarLogger.Sync() // flushes buffer, if any
 	sugar := sugarLogger.Sugar()
 
-	timeStreamAdapter := newTimeStreamAdapter(sugar, cfg, nil, nil)
-	if err := serve(sugar, cfg.listenAddr, timeStreamAdapter); err != nil {
-		sugar.Errorw("Failed to listen", "addr", cfg.listenAddr, "err", err)
-		os.Exit(1)
+	if cfg.healthCheck {
+		os.Exit(0)
+	} else {
+		timeStreamAdapter := newTimeStreamAdapter(sugar, cfg, nil, nil)
+		if err := serve(sugar, cfg.listenAddr, timeStreamAdapter); err != nil {
+			sugar.Errorw("Failed to listen", "addr", cfg.listenAddr, "err", err)
+			os.Exit(1)
+		}
 	}
 }
 
