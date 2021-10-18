@@ -105,3 +105,22 @@ func readHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) h
 		}
 	}
 }
+
+func healthCheckHandler(logger *zap.SugaredLogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		compressed, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logger.Errorw("Read error", "err", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Encoding", "UTF-8")
+
+		compressed = snappy.Encode(nil, []byte("OK"))
+		if _, err := w.Write(compressed); err != nil {
+			logger.Errorw("Error writing response", "err", err)
+		}
+	}
+}
