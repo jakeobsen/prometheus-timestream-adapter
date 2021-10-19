@@ -73,4 +73,12 @@ The maximum number of characters for an AWS Timestream Dimension name is 256 byt
 
 [Timestream Quotas](https://docs.aws.amazon.com/timestream/latest/developerguide/ts-limits.html)
   
+## Running in ECS
 
+AWS ECS require a healthcheck to run this container, this can be archieved by setting the task definition healthcheck command to:
+
+```
+CMD,/usr/local/bin/prometheus-timestream-adapter,--healthCheck
+```
+
+Similar if running in AWS Fargate with a load balancer, the load balancer would require a HTTP-based health check, this can be performed by sending checks to the `/healthCheck` path of the container.
