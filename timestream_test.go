@@ -39,9 +39,7 @@ var (
 	timeStreamAdapter = &TimeStreamAdapter{
 		TimestreamQueryAPI: TimeStreamQueryMock{},
 		TimestreamWriteAPI: TimeStreamWriterMock{},
-		databaseName:       "mockDatabase",
 		logger:             zap.NewNop().Sugar(),
-		tableName:          "mockTable",
 	}
 
 	measureOutput = &timestreamquery.QueryOutput{
@@ -448,7 +446,7 @@ func TestTimeSteamAdapter_Write(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := timeStreamAdapter.Write(tt.args.req); (err != nil) != tt.wantErr {
+			if err := timeStreamAdapter.Write(tt.args.req, "mockDatabase", "mockTable"); (err != nil) != tt.wantErr {
 				t.Errorf("Write() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -522,7 +520,7 @@ func TestTimeSteamAdapter_Read(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResponse, err := timeStreamAdapter.Read(tt.args.request)
+			gotResponse, err := timeStreamAdapter.Read(tt.args.request, "mockDatabase", "mockTable")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
 				return
