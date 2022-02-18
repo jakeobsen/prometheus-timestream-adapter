@@ -34,10 +34,8 @@ import (
 type config struct {
 	healthCheck   bool
 	awsRegion     string
-	databaseName  string
 	listenAddr    string
 	logLevel      string
-	tableName     string
 	telemetryPath string
 	tls           bool
 	tlsCert       string
@@ -86,10 +84,8 @@ func init() {
 	flag.BoolVar(&cfg.healthCheck, "healthCheck", false, "")
 	flag.BoolVar(&cfg.tls, "tls", false, "")
 	flag.StringVar(&cfg.awsRegion, "awsRegion", "eu-central-1", "")
-	flag.StringVar(&cfg.databaseName, "databaseName", "prometheus-database", "")
 	flag.StringVar(&cfg.listenAddr, "listenAddr", ":9201", "")
 	flag.StringVar(&cfg.logLevel, "logLevel", "error", "")
-	flag.StringVar(&cfg.tableName, "tableName", "prometheus-table", "")
 	flag.StringVar(&cfg.telemetryPath, "telemetryPath", "/metric", "")
 	flag.StringVar(&cfg.tlsCert, "tlsCert", "tls.cert", "")
 	flag.StringVar(&cfg.tlsKey, "tlsKey", "tls.key", "")
@@ -135,8 +131,8 @@ func main() {
 }
 
 type PrometheusRemoteStorageAdapter interface {
-	Write(records *prompb.WriteRequest) error
-	Read(request *prompb.ReadRequest) (*prompb.ReadResponse, error)
+	Write(records *prompb.WriteRequest, databaseName string, tableName string) error
+	Read(request *prompb.ReadRequest, databaseName string, tableName string) (*prompb.ReadResponse, error)
 	Name() string
 }
 

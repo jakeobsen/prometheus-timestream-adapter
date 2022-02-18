@@ -46,9 +46,7 @@ import (
 const TimestreamMaxRecordsPerRequest = 100
 
 type TimeStreamAdapter struct {
-	databaseName string
-	logger       *zap.SugaredLogger
-	tableName    string
+	logger *zap.SugaredLogger
 	timestreamqueryiface.TimestreamQueryAPI
 	timestreamwriteiface.TimestreamWriteAPI
 }
@@ -104,9 +102,7 @@ func newTimeStreamAdapter(logger *zap.SugaredLogger, cfg *config, writeSvc times
 	return TimeStreamAdapter{
 		TimestreamQueryAPI: readSvc,
 		TimestreamWriteAPI: writeSvc,
-		databaseName:       cfg.databaseName,
 		logger:             logger,
-		tableName:          cfg.tableName,
 	}
 }
 
@@ -116,7 +112,7 @@ func (t TimeStreamAdapter) Name() string {
 	return "prometheus-timestream-adapter"
 }
 
-func (t TimeStreamAdapter) Write(req *prompb.WriteRequest) (err error) {
+func (t TimeStreamAdapter) Write(req *prompb.WriteRequest, databaseName string, tableName string) (err error) {
 	timer := prometheus.NewTimer(sentBatchDuration.WithLabelValues(t.Name()))
 	defer timer.ObserveDuration()
 
@@ -125,8 +121,8 @@ func (t TimeStreamAdapter) Write(req *prompb.WriteRequest) (err error) {
 
 	for _, chunk := range t.splitRecords(records) {
 		_, err = t.WriteRecords(&timestreamwrite.WriteRecordsInput{
-			DatabaseName: aws.String(t.databaseName),
-			TableName:    aws.String(t.tableName),
+			DatabaseName: aws.String(databaseName),
+			TableName:    aws.String(tableName),
 			Records:      chunk,
 		})
 
@@ -183,12 +179,12 @@ func (t TimeStreamAdapter) splitRecords(records []*timestreamwrite.Record) [][]*
 
 // Read implementation
 
-func (t TimeStreamAdapter) Read(request *prompb.ReadRequest) (response *prompb.ReadResponse, err error) {
+func (t TimeStreamAdapter) Read(request *prompb.ReadRequest, databaseName string, tableName string) (response *prompb.ReadResponse, err error) {
 	var queryResult prompb.QueryResult
 	var queryResults []*prompb.QueryResult
 
 	for _, q := range request.Queries {
-		queryResult, err = t.runReadRequestQuery(q)
+		queryResult, err = t.runReadRequestQuery(q, databaseName, tableName)
 
 		if err != nil {
 			return
@@ -204,8 +200,8 @@ func (t TimeStreamAdapter) Read(request *prompb.ReadRequest) (response *prompb.R
 	return
 }
 
-func (t TimeStreamAdapter) runReadRequestQuery(q *prompb.Query) (result prompb.QueryResult, err error) {
-	task, err := t.buildTimeStreamQueryString(q)
+func (t TimeStreamAdapter) runReadRequestQuery(q *prompb.Query, databaseName string, tableName string) (result prompb.QueryResult, err error) {
+	task, err := t.buildTimeStreamQueryString(q, databaseName, tableName)
 
 	if err != nil {
 		return
@@ -233,7 +229,7 @@ func (t TimeStreamAdapter) runReadRequestQuery(q *prompb.Query) (result prompb.Q
 }
 
 // BuildCommand generates the proper SQL for the runReadRequestQuery
-func (t TimeStreamAdapter) buildTimeStreamQueryString(q *prompb.Query) (task queryTask, err error) {
+func (t TimeStreamAdapter) buildTimeStreamQueryString(q *prompb.Query, databaseName string, tableName string) (task queryTask, err error) {
 	matchers := make([]string, 0, len(q.Matchers))
 	for _, m := range q.Matchers {
 		// Metric Names
@@ -268,22 +264,22 @@ func (t TimeStreamAdapter) buildTimeStreamQueryString(q *prompb.Query) (task que
 	matchers = append(matchers, fmt.Sprintf("time BETWEEN from_milliseconds(%d) AND from_milliseconds(%d)",
 		q.StartTimestampMs, q.EndTimestampMs))
 
-	dimensions, err := t.readDimension(task.measureName)
+	dimensions, err := t.readDimension(task.measureName, databaseName, tableName)
 
 	if err != nil {
 		return
 	}
 
 	task.query = fmt.Sprintf("SELECT %s, CREATE_TIME_SERIES(time, measure_value::double) AS %s FROM \"%s\".\"%s\" WHERE %s GROUP BY %s",
-		strings.Join(dimensions, ", "), task.measureName, cfg.databaseName, cfg.tableName, strings.Join(matchers, " AND "), strings.Join(dimensions, ", "))
+		strings.Join(dimensions, ", "), task.measureName, databaseName, tableName, strings.Join(matchers, " AND "), strings.Join(dimensions, ", "))
 
 	t.logger.Debugw("Timestream read", "runReadRequestQuery", task.query)
 
 	return
 }
 
-func (t TimeStreamAdapter) readDimension(measureName string) (dimensions []string, err error) {
-	query := fmt.Sprintf("SHOW MEASURES FROM \"%s\".\"%s\" LIKE '%s'", cfg.databaseName, cfg.tableName, measureName)
+func (t TimeStreamAdapter) readDimension(measureName string, databaseName string, tableName string) (dimensions []string, err error) {
+	query := fmt.Sprintf("SHOW MEASURES FROM \"%s\".\"%s\" LIKE '%s'", databaseName, tableName, measureName)
 
 	queryOutput, err := t.Query(&timestreamquery.QueryInput{QueryString: &query})
 	if err != nil {

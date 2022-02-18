@@ -29,6 +29,14 @@ import (
 
 func writeHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		databaseName := r.URL.Query().Get("databaseName")
+		tableName := r.URL.Query().Get("tableName")
+		if databaseName == "" || tableName == "" {
+			logger.Errorw("Read error", "err", "Missing databaseName or tableName get params")
+			http.Error(w, "Missing databaseName or tableName get params", http.StatusInternalServerError)
+			return
+		}
+
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			logger.Errorw("Read error", "err", err.Error())
@@ -50,7 +58,7 @@ func writeHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) 
 			return
 		}
 
-		err = ad.Write(&req)
+		err = ad.Write(&req, databaseName, tableName)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -61,6 +69,14 @@ func writeHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) 
 
 func readHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		databaseName := r.URL.Query().Get("databaseName")
+		tableName := r.URL.Query().Get("tableName")
+		if databaseName == "" || tableName == "" {
+			logger.Errorw("Read error", "err", "Missing databaseName or tableName get params")
+			http.Error(w, "Missing databaseName or tableName get params", http.StatusInternalServerError)
+			return
+		}
+
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			logger.Errorw("Read error", "err", err.Error())
@@ -83,7 +99,7 @@ func readHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) h
 		}
 
 		var resp *prompb.ReadResponse
-		resp, err = ad.Read(&req)
+		resp, err = ad.Read(&req, databaseName, tableName)
 		if err != nil {
 			logger.Errorw("Error executing query", "query", req, "err", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
