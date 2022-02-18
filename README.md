@@ -20,14 +20,14 @@ To configure Prometheus to send samples to this binary, add the following to you
 
 ```yaml
 remote_write:
-  - url: "http://prometheus-timestream-adapter:9201/write"
+  - url: "http://prometheus-timestream-adapter:9201/write?databaseName=prometheus&tableName=prometheus"
 ```
 
 :warning: **There is a very early remote_reader version!** [AWS Timestream](https://aws.amazon.com/timestream) has a very powerful [query language](https://docs.aws.amazon.com/timestream/latest/developerguide/reference.html) and there is a [Grafana Plugin](https://grafana.com/grafana/plugins/grafana-timestream-datasource) supporting Timestream as a datasource. However, there is a very basic reader implementation.
 
 ```yaml
 remote_read:
-  - url: "http://prometheus-timestream-adapter:9201/read"
+  - url: "http://prometheus-timestream-adapter:9201/read?databaseName=prometheus&tableName=prometheus"
 ```
 
 ## Access Prometheus Timestream Database
@@ -81,4 +81,5 @@ AWS ECS require a healthcheck to run this container, this can be archieved by se
 CMD,/usr/local/bin/prometheus-timestream-adapter,--healthCheck
 ```
 
-Similar if running in AWS Fargate with a load balancer, the load balancer would require a HTTP-based health check, this can be performed by sending checks to the `/healthCheck` path of the container.
+Similar if running in AWS Fargate with a load balancer, the load balancer would require a HTTP-based health check,
+this can be performed by sending checks to the `/healthCheck` path of the container.
