@@ -46,7 +46,9 @@ import (
 const TimestreamMaxRecordsPerRequest = 100
 
 type TimeStreamAdapter struct {
-	logger *zap.SugaredLogger
+	databaseName string
+	logger       *zap.SugaredLogger
+	tableName    string
 	timestreamqueryiface.TimestreamQueryAPI
 	timestreamwriteiface.TimestreamWriteAPI
 }
@@ -102,7 +104,9 @@ func newTimeStreamAdapter(logger *zap.SugaredLogger, cfg *config, writeSvc times
 	return TimeStreamAdapter{
 		TimestreamQueryAPI: readSvc,
 		TimestreamWriteAPI: writeSvc,
+		databaseName:       cfg.databaseName,
 		logger:             logger,
+		tableName:          cfg.tableName,
 	}
 }
 

@@ -19,6 +19,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
@@ -31,9 +32,15 @@ func writeHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) 
 	return func(w http.ResponseWriter, r *http.Request) {
 		databaseName := r.URL.Query().Get("databaseName")
 		tableName := r.URL.Query().Get("tableName")
+		if databaseName == "" {
+			databaseName = cfg.databaseName
+		}
+		if tableName == "" {
+			tableName = cfg.tableName
+		}
 		if databaseName == "" || tableName == "" {
-			logger.Errorw("Read error", "err", "Missing databaseName or tableName get params")
-			http.Error(w, "Missing databaseName or tableName get params", http.StatusInternalServerError)
+			logger.Errorw("Read error", "err", "Missing databaseName or tableName parameters")
+			http.Error(w, "Missing databaseName or tableName parameters", http.StatusInternalServerError)
 			return
 		}
 
@@ -71,9 +78,15 @@ func readHandler(logger *zap.SugaredLogger, ad PrometheusRemoteStorageAdapter) h
 	return func(w http.ResponseWriter, r *http.Request) {
 		databaseName := r.URL.Query().Get("databaseName")
 		tableName := r.URL.Query().Get("tableName")
+		if databaseName == "" {
+			databaseName = cfg.databaseName
+		}
+		if tableName == "" {
+			tableName = cfg.tableName
+		}
 		if databaseName == "" || tableName == "" {
-			logger.Errorw("Read error", "err", "Missing databaseName or tableName get params")
-			http.Error(w, "Missing databaseName or tableName get params", http.StatusInternalServerError)
+			logger.Errorw("Read error", "err", "Missing databaseName or tableName parameters")
+			http.Error(w, "Missing databaseName or tableName parameters", http.StatusInternalServerError)
 			return
 		}
 

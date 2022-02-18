@@ -34,8 +34,10 @@ import (
 type config struct {
 	healthCheck   bool
 	awsRegion     string
+	databaseName  string
 	listenAddr    string
 	logLevel      string
+	tableName     string
 	telemetryPath string
 	tls           bool
 	tlsCert       string
@@ -84,8 +86,10 @@ func init() {
 	flag.BoolVar(&cfg.healthCheck, "healthCheck", false, "")
 	flag.BoolVar(&cfg.tls, "tls", false, "")
 	flag.StringVar(&cfg.awsRegion, "awsRegion", "eu-central-1", "")
+	flag.StringVar(&cfg.databaseName, "databaseName", "", "")
 	flag.StringVar(&cfg.listenAddr, "listenAddr", ":9201", "")
 	flag.StringVar(&cfg.logLevel, "logLevel", "error", "")
+	flag.StringVar(&cfg.tableName, "tableName", "", "")
 	flag.StringVar(&cfg.telemetryPath, "telemetryPath", "/metric", "")
 	flag.StringVar(&cfg.tlsCert, "tlsCert", "tls.cert", "")
 	flag.StringVar(&cfg.tlsKey, "tlsKey", "tls.key", "")
@@ -141,7 +145,6 @@ func serve(logger *zap.SugaredLogger, addr string, storageAdapter PrometheusRemo
 	http.Handle("/write", writeHandler(logger, storageAdapter))
 	http.Handle("/read", readHandler(logger, storageAdapter))
 	http.Handle("/healthCheck", healthCheckHandler(logger))
-	http.Handle("/healthcheck", healthCheckHandler(logger))
 
 	if cfg.tls {
 		return http.ListenAndServeTLS(addr, cfg.tlsCert, cfg.tlsKey, nil)
