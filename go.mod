@@ -1,4 +1,4 @@
-module github.com/dpattmann/prometheus-timestream-adapter
+module github.com/jakeobsen/prometheus-timestream-adapter
 
 go 1.15
 
